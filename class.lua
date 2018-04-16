@@ -63,6 +63,9 @@ local function metamethod( class, eventname )
 	return function( ... )
 		local event = nil
 		local base = getbaseclass( class )
+                if eventname == "__tostring" then
+                    return class._NAME
+                end
 		while ( base ~= nil ) do
 			if ( base[ eventname ] ) then
 				event = base[ eventname ]
@@ -125,6 +128,9 @@ function package.class( module )
 				end
 				constructor( object, ... )
 			end
+        if self.__auto then
+            getbaseclass(self)[self.__base](self)
+        end
 			-- Return the instance
 			return object
 		end
@@ -136,10 +142,12 @@ end
 -- Purpose: Sets a base class
 -- Input: base - Class name
 -------------------------------------------------------------------------------
-function package.inherit( base )
+function package.inherit( base, auto )
 	return function( module )
 		-- Set our base class
 		module.__base = base
+    module.__auto = auto
+            --module.__call = getbaseclass(module)[base]
 		-- Overwrite our existing __index value with a metamethod which checks
 		-- our members, metatable, and base class, in that order, a la behavior
 		-- via the Lua 5.1 manual's illustrative code for indexing access
@@ -176,8 +184,8 @@ function class( name )
 		module( name, package.class )
 	end setmodule( name )
 	-- For syntactic sugar, return a function to set inheritance
-	return function( base )
+	return function( base, auto )
 		local _M = package.loaded[ name ]
-		package.inherit( base )( _M )
+		package.inherit( base, auto )( _M )
 	end
 end
